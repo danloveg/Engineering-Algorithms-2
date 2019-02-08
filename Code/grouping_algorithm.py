@@ -6,8 +6,8 @@ UNEVEN_PENALTY = 5
 
 class Cost:
     """Defines the cost of a solution"""
-    def __init__(self, num_connections, uneven_cost):
-        self.num_connections = num_connections
+    def __init__(self, connection_cost, uneven_cost):
+        self.connection_cost = connection_cost
         self.uneven_cost = uneven_cost
 
 class AlgorithmSolution:
@@ -54,7 +54,7 @@ def split_into_groups(adjacency_matrix):
         current_cost = calculate_cost(adjacency_matrix, component_group_A, component_group_B)
 
         # If the new solution is better than the best one so far, make it the new best
-        if current_cost.num_connections < best_solution.cost.num_connections:
+        if current_cost.connection_cost < best_solution.cost.connection_cost:
             better_solution_found = True
             consecutive_worse_cost = 0
             best_solution = AlgorithmSolution(copy.deepcopy(component_group_A), copy.deepcopy(component_group_B), current_cost)
@@ -67,10 +67,10 @@ def split_into_groups(adjacency_matrix):
         # Only print cost of new solution if we found a new best
         if better_solution_found:
             print("Iteration {}".format(iteration))
-            print("Cost due to unevenness: {}\nNumber of connections: {}\n".format(current_cost.uneven_cost, current_cost.num_connections))
+            print("Cost due to unevenness: {}\nConnection cost: {}\n".format(current_cost.uneven_cost, current_cost.connection_cost))
 
         # Don't keep running if cost is zero
-        if best_solution.cost.num_connections == 0:
+        if best_solution.cost.connection_cost == 0:
             break
 
         iteration += 1
@@ -93,16 +93,15 @@ def get_initial_component_groups(graph_size):
 
 def calculate_cost(adjacency_matrix, node_group_A, node_group_B):
     # Get the number of connections between groups
-    num_connections = 0
+    connection_cost = 0
     for i in node_group_A:
         for j in node_group_B:
-            if adjacency_matrix[i][j] != 0:
-                num_connections += 1
+            connection_cost += adjacency_matrix[i][j]
 
     # Get uneven penalty
     uneven_cost = UNEVEN_PENALTY * abs(len(node_group_A) - len(node_group_B))
 
-    return Cost(num_connections, uneven_cost)
+    return Cost(connection_cost, uneven_cost)
 
 def print_final_solution(solution: AlgorithmSolution):
     user_input = input("Do you want to print the final groups of components? (Y/N): ").strip().lower()
