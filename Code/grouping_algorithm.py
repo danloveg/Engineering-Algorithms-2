@@ -27,18 +27,12 @@ def split_into_groups(adjacency_matrix):
     print('Press CTRL-C at any point to stop.\n')
 
     graph_size = len(adjacency_matrix)
+
     # Number of tries to find a better solution without finding a better one is proportional to graph size
     consecutive_worse_cost_max = graph_size * graph_size
 
-    component_group_A = []
-    component_group_B = []
-
     # Initially, separate graph into two non-optimized groups
-    for i in range(0, graph_size):
-        if len(component_group_A) >= (int(graph_size / 2)):
-            component_group_B.append(i)
-        else:
-            component_group_A.append(i)
+    (component_group_A, component_group_B) = get_initial_component_groups(graph_size)
 
     # Make the best solution really bad at first (very high cost)
     best_solution = AlgorithmSolution([], [], Cost(graph_size * graph_size, graph_size * graph_size))
@@ -84,6 +78,18 @@ def split_into_groups(adjacency_matrix):
     print("> Finished running after {} iterations.".format(iteration))
     print("> Finished in {:.5f} seconds\n".format(time.time() - start_time))
     print_final_solution(best_solution)
+
+def get_initial_component_groups(graph_size):
+    # Shuffle component list
+    all_components = list(range(0, graph_size))
+    random.shuffle(all_components)
+
+    # Put half of the components in one array, the other half in the other
+    half_size = int(graph_size / 2)
+    component_group_A = all_components[0: half_size]
+    component_group_B = all_components[half_size:]
+
+    return (component_group_A, component_group_B)
 
 def calculate_cost(adjacency_matrix, node_group_A, node_group_B):
     # Get the number of connections between groups
