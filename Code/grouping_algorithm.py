@@ -23,7 +23,7 @@ def split_into_groups(adjacency_matrix):
 
     adjacency_matrix: A numpy N x N array representing a symmetric adjacency matrix
     """
-    print('Using naive algorithm to split matrix into two groups with minimal connections.')
+    print('Using simulated annealing to split matrix into two groups with minimal connections.')
     print('Press CTRL-C at any point to stop.\n')
 
     graph_size = len(adjacency_matrix)
