@@ -86,3 +86,20 @@ def convert_text_matrix_to_graph(filepath):
     numpy_array = numpy.array(rows_of_numbers)
 
     return numpy_array
+
+
+def output_graph_to_file(graph, new_filename):
+    try:
+        with open(new_filename, 'w') as f:
+            for row in graph:
+                f.write(convert_num_array_to_string(row))
+
+    except Exception as e:
+        print(e)
+
+
+def convert_num_array_to_string(num_array):
+    line = ""
+    for num in num_array:
+        line += "{} ".format(num)
+    return "{}\n".format(line.strip())
