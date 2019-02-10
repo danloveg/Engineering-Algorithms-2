@@ -34,8 +34,10 @@ def split_into_groups(adjacency_matrix):
     # Initially, separate graph into two non-optimized groups
     (component_group_A, component_group_B) = get_initial_component_groups(graph_size)
 
+    control_param = get_initial_control_parameter(adjacency_matrix, component_group_A, component_group_B)
+
     # Make the best solution really bad at first (very high cost)
-    best_solution = AlgorithmSolution([], [], Cost(graph_size * graph_size, graph_size * graph_size))
+    best_solution = AlgorithmSolution([], [], Cost(9 * (graph_size ^ 2), 9 * (graph_size ^ 2)))
     iteration = 1
     consecutive_worse_cost = 0
     better_solution_found = True
@@ -78,6 +80,30 @@ def split_into_groups(adjacency_matrix):
     print("> Finished running after {} iterations.".format(iteration))
     print("> Finished in {:.5f} seconds\n".format(time.time() - start_time))
     print_final_solution(best_solution)
+
+def get_initial_control_parameter(adjacency_matrix, node_group_A, node_group_B):
+    initial_cost = calculate_cost(adjacency_matrix, node_group_A, node_group_B)
+    delta_multiplier = 5
+    number_iterations = len(node_group_A) # This is arbitrary
+    delta_cost_sum = 0
+
+    node_group_A_copy = copy.deepcopy(node_group_A)
+    node_group_B_copy = copy.deepcopy(node_group_B)
+
+    for i in range(0, number_iterations):
+        swap_one_item_between_groups(node_group_A_copy, node_group_B_copy)
+        current_cost = calculate_cost(adjacency_matrix, node_group_A_copy, node_group_B_copy)
+        delta_value = abs(initial_cost.connection_cost - current_cost.connection_cost)
+        delta_cost_sum += delta_value
+
+    return (delta_multiplier * (delta_cost_sum / number_iterations))
+
+def swap_one_item_between_groups(node_group_A, node_group_B):
+    indexA = random.choice(range(0, len(node_group_A)))
+    indexB = random.choice(range(0, len(node_group_B)))
+    temp = node_group_A[indexA]
+    node_group_A[indexA] =node_group_B[indexB]
+    node_group_B[indexB] = temp
 
 def get_initial_component_groups(graph_size):
     # Shuffle component list
