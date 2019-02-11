@@ -65,7 +65,10 @@ def split_into_groups(adjacency_matrix):
 
             # Simulated annealing
             delta = best_solution.cost.connection_cost - current_cost.connection_cost
-            probability_to_take = math.exp(delta / control_param)
+            try:
+                probability_to_take = math.exp(delta / control_param)
+            except OverflowError:
+                probability_to_take = 1.00   
             random_num = random.random()
             take_solution = (random_num < probability_to_take)
             
