@@ -1,8 +1,12 @@
 import random
 import copy
 import time
+import math
+import cost_plotter
 
 UNEVEN_PENALTY = 5
+CONTROL_PARAM_DECREASE_RATE = 0.99
+INIT_CONTROL_PARAM_MULTIPLIER = 2
 
 class Cost:
     """Defines the cost of a solution"""
@@ -28,63 +32,81 @@ def split_into_groups(adjacency_matrix):
 
     graph_size = len(adjacency_matrix)
 
-    # Number of tries to find a better solution without finding a better one is proportional to graph size
-    consecutive_worse_cost_max = graph_size * graph_size
+    consecutive_solutions_unchanged_max = graph_size * graph_size
 
-    # Initially, separate graph into two non-optimized groups
     (component_group_A, component_group_B) = get_initial_component_groups(graph_size)
 
     control_param = get_initial_control_parameter(adjacency_matrix, component_group_A, component_group_B)
 
-    # Make the best solution really bad at first (very high cost)
-    best_solution = AlgorithmSolution([], [], Cost(9 * (graph_size ^ 2), 9 * (graph_size ^ 2)))
+    best_solution = AlgorithmSolution(\
+        copy.deepcopy(component_group_A),\
+        copy.deepcopy(component_group_B),\
+        Cost(9 * (graph_size ^ 2), 9 * (graph_size ^ 2)))
+
+    solution_list = []
     iteration = 1
-    consecutive_worse_cost = 0
-    better_solution_found = True
+    consecutive_solutions_unchanged = 0
+    new_solution = True
     start_time = time.time()
     
-    while consecutive_worse_cost < consecutive_worse_cost_max:
-        # Swap two nodes between group A and B (except on first iteration)
-        if iteration != 1:
-            indexA = random.choice(range(0, len(component_group_A)))
-            indexB = random.choice(range(0, len(component_group_B)))
-            temp = component_group_A[indexA]
-            component_group_A[indexA] = component_group_B[indexB]
-            component_group_B[indexB] = temp
-
-        # Get the cost for this iteration
-        current_cost = calculate_cost(adjacency_matrix, component_group_A, component_group_B)
-
-        # If the new solution is better than the best one so far, make it the new best
-        if current_cost.connection_cost < best_solution.cost.connection_cost:
-            better_solution_found = True
-            consecutive_worse_cost = 0
-            best_solution = AlgorithmSolution(copy.deepcopy(component_group_A), copy.deepcopy(component_group_B), current_cost)
-
-        # Else the new solution is no better than the current one
-        else:
-            better_solution_found = False
-            consecutive_worse_cost += 1
-
-        # Only print cost of new solution if we found a new best
-        if better_solution_found:
-            print("Iteration {}".format(iteration))
-            print("Cost due to unevenness: {}\nConnection cost: {}\n".format(current_cost.uneven_cost, current_cost.connection_cost))
-
-        # Don't keep running if cost is zero
+    while consecutive_solutions_unchanged < consecutive_solutions_unchanged_max:
+        # Edge case: stop running when cost is zero
         if best_solution.cost.connection_cost == 0:
             break
+        
+        for i in range(0, graph_size^2):
+            swap_one_item_between_groups(component_group_A, component_group_B)
 
-        iteration += 1
+            current_cost = calculate_cost(adjacency_matrix, component_group_A, component_group_B)
+
+            # Simulated annealing
+            delta = best_solution.cost.connection_cost - current_cost.connection_cost
+            probability_to_take = math.exp(delta / control_param)
+            random_num = random.random()
+            take_solution = (random_num < probability_to_take)
+            
+            #print("kT: {:.4f}, DELTA: {}, PROB: {:.4f}, RAND: {:.4}, TAKE: {}".format(\
+            #    control_param, delta, probability_to_take, random_num, take_solution))
+
+            # Take better solution unconditionally
+            # - OR -
+            # Take worse solution with some probability
+            if take_solution:
+                solution_list.append(current_cost.connection_cost)
+                new_solution = True
+                consecutive_solutions_unchanged = 0
+                best_solution = AlgorithmSolution(\
+                    copy.deepcopy(component_group_A),\
+                    copy.deepcopy(component_group_B),\
+                    current_cost)
+
+            # Else the new solution is no better than the current one
+            else:
+                new_solution = False
+                consecutive_solutions_unchanged += 1
+
+            # Only print cost of new solution if we found a new best
+            if new_solution:
+                print("Iteration {}".format(iteration))
+                print("Cost due to unevenness: {}\nConnection cost: {}\n".format(current_cost.uneven_cost, current_cost.connection_cost))
+
+            iteration += 1
+        # end for
+
+        # Decrease control parameter geometrically
+        control_param = control_param * CONTROL_PARAM_DECREASE_RATE
+
+    # end while
 
     print("> Finished running after {} iterations.".format(iteration))
-    print("> Finished in {:.5f} seconds\n".format(time.time() - start_time))
+    print("> Finished in {:.5f} seconds".format(time.time() - start_time))
+    print("> Final cost: {}\n".format(best_solution.cost.connection_cost))
     print_final_solution(best_solution)
+    show_cost_plot(solution_list)
 
 def get_initial_control_parameter(adjacency_matrix, node_group_A, node_group_B):
     initial_cost = calculate_cost(adjacency_matrix, node_group_A, node_group_B)
-    delta_multiplier = 5
-    number_iterations = len(node_group_A) # This is arbitrary
+    number_iterations = int((len(node_group_A)^2) / 2) # Experimentally derived
     delta_cost_sum = 0
 
     node_group_A_copy = copy.deepcopy(node_group_A)
@@ -96,7 +118,7 @@ def get_initial_control_parameter(adjacency_matrix, node_group_A, node_group_B):
         delta_value = abs(initial_cost.connection_cost - current_cost.connection_cost)
         delta_cost_sum += delta_value
 
-    return (delta_multiplier * (delta_cost_sum / number_iterations))
+    return (INIT_CONTROL_PARAM_MULTIPLIER * (delta_cost_sum / number_iterations))
 
 def swap_one_item_between_groups(node_group_A, node_group_B):
     indexA = random.choice(range(0, len(node_group_A)))
@@ -130,11 +152,15 @@ def calculate_cost(adjacency_matrix, node_group_A, node_group_B):
     return Cost(connection_cost, uneven_cost)
 
 def print_final_solution(solution: AlgorithmSolution):
-    user_input = input("Do you want to print the final groups of components? (Y/N): ").strip().lower()
+    solution.group_a.sort()
+    solution.group_b.sort()
+    group_a = list(map(lambda x: x + 1, solution.group_a))
+    group_b = list(map(lambda x: x + 1, solution.group_b))
+    print("> Final groups of nodes:")
+    print("> Group A: {}".format(group_a))
+    print("> Group B: {}\n".format(group_b))
+
+def show_cost_plot(cost_list):
+    user_input = input("> Do you want to plot the costs changing over time? (Y/N): ").strip().lower()
     if user_input == "y":
-        solution.group_a.sort()
-        solution.group_b.sort()
-        group_a = list(map(lambda x: x + 1, solution.group_a))
-        group_b = list(map(lambda x: x + 1, solution.group_b))
-        print("Group A: {}".format(group_a))
-        print("Group B: {}\n".format(group_b))
+        cost_plotter.plot_costs(cost_list)
