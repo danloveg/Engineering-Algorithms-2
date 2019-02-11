@@ -1,5 +1,5 @@
 import graphtools
-import grouping_algorithm
+import grouping_algorithm_anneal
 import plac
 from pathlib import Path
 

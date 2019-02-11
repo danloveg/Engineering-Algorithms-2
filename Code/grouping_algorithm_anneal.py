@@ -68,10 +68,10 @@ def split_into_groups(adjacency_matrix):
             try:
                 probability_to_take = math.exp(delta / control_param)
             except OverflowError:
-                probability_to_take = 1.00   
+                probability_to_take = 1.00
             random_num = random.random()
             take_solution = (random_num < probability_to_take)
-            
+
             #print("kT: {:.4f}, DELTA: {}, PROB: {:.4f}, RAND: {:.4}, TAKE: {}".format(\
             #    control_param, delta, probability_to_take, random_num, take_solution))
 
