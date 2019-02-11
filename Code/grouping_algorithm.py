@@ -80,12 +80,10 @@ def split_into_groups(adjacency_matrix):
                     copy.deepcopy(component_group_B),\
                     current_cost)
 
-            # Else the new solution is no better than the current one
             else:
                 new_solution = False
                 consecutive_solutions_unchanged += 1
 
-            # Only print cost of new solution if we found a new best
             if new_solution:
                 print("Iteration {}".format(iteration))
                 print("Cost due to unevenness: {}\nConnection cost: {}\n".format(current_cost.uneven_cost, current_cost.connection_cost))
