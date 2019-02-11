@@ -10,7 +10,7 @@ def str_to_int(string):
 
 def main(size: "Size of graph", sparseness: "Percentage of graph that is sparse"):
     graph = graphtools.create_symmetric_graph(str_to_int(size), str_to_int(sparseness))
-    grouping_algorithm.split_into_groups(graph)
+    grouping_algorithm_anneal.split_into_groups(graph)
 
 if __name__ == '__main__':
     try:
