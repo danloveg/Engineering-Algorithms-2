@@ -5,8 +5,11 @@ import math
 import cost_plotter
 
 UNEVEN_PENALTY = 5
-CONTROL_PARAM_DECREASE_RATE = 0.99
+
+# Simulated annealing variables. These can be tweaked to change the performance of the algorithm
+CONTROL_PARAM_DECREASE_RATE = 0.92
 INIT_CONTROL_PARAM_MULTIPLIER = 2
+GRAPH_SIZE_ITERATION_MULTIPLIER = 5
 
 class Cost:
     """Defines the cost of a solution"""
@@ -37,12 +40,13 @@ def split_into_groups(adjacency_matrix):
     (component_group_A, component_group_B) = get_initial_component_groups(graph_size)
 
     control_param = get_initial_control_parameter(adjacency_matrix, component_group_A, component_group_B)
+    initial_cost = calculate_cost(adjacency_matrix, component_group_A, component_group_B)
 
     best_solution = AlgorithmSolution(\
         copy.deepcopy(component_group_A),\
         copy.deepcopy(component_group_B),\
-        Cost(9 * (graph_size ^ 2), 9 * (graph_size ^ 2)))
-
+        initial_cost)
+    
     solution_list = []
     iteration = 1
     consecutive_solutions_unchanged = 0
@@ -54,7 +58,7 @@ def split_into_groups(adjacency_matrix):
         if best_solution.cost.connection_cost == 0:
             break
         
-        for i in range(0, graph_size^2):
+        for i in range(0, graph_size * GRAPH_SIZE_ITERATION_MULTIPLIER):
             swap_one_item_between_groups(component_group_A, component_group_B)
 
             current_cost = calculate_cost(adjacency_matrix, component_group_A, component_group_B)
@@ -98,13 +102,14 @@ def split_into_groups(adjacency_matrix):
 
     print("> Finished running after {} iterations.".format(iteration))
     print("> Finished in {:.5f} seconds".format(time.time() - start_time))
+    print("> Initial cost: {}".format(initial_cost.connection_cost))
     print("> Final cost: {}\n".format(best_solution.cost.connection_cost))
     print_final_solution(best_solution)
     show_cost_plot(solution_list)
 
 def get_initial_control_parameter(adjacency_matrix, node_group_A, node_group_B):
     initial_cost = calculate_cost(adjacency_matrix, node_group_A, node_group_B)
-    number_iterations = int((len(node_group_A)^2) / 2) # Experimentally derived
+    number_iterations = int((len(node_group_A) **2) / 2) # Experimentally derived
     delta_cost_sum = 0
 
     node_group_A_copy = copy.deepcopy(node_group_A)

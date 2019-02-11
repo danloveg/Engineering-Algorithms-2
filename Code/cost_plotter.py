@@ -1,5 +1,5 @@
 import matplotlib
-matplotlib.use('qt4agg')
+matplotlib.use('TKAgg')
 import matplotlib.pyplot as plt
 
 def plot_costs(cost_list):
